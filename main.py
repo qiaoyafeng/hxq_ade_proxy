@@ -41,17 +41,18 @@ async def proxy_request(request: Request, path: str):
             content=await request.body(),
             timeout=settings.TIMEOUT,
         )
-        logger.info(f"Forwarded to MAIN system: {target_url}")
+        logger.info(f"转发主系统: {target_url}")
         return Response(
             content=response.content,
             status_code=response.status_code,
             headers=dict(response.headers),
         )
     except (httpx.ConnectError, httpx.TimeoutException) as e:
-        logger.error(f"Main system failed: {e}")
+        logger.error(f"转发主系统连接失败: {e}")
         data = {"mobile": settings.ADMIN_MOBILE, "code": "ADE主机服务异常，紧急处理。"}
+        logger.error(f"转发主系统短信 data: {data}")
         send_res = await client.post(f"{settings.SMS_HOST}/content/sms", data=data)
-        logger.info(f"Forwarded to MAIN system send_res: {send_res}， send_res text: {send_res.text}")
+        logger.error(f"转发主系统短信 send_res: {send_res}， send_res text: {send_res.text}")
 
     # 3. 主系统失败时尝试备用系统
     try:
@@ -62,19 +63,20 @@ async def proxy_request(request: Request, path: str):
             content=await request.body(),
             timeout=TIMEOUT,
         )
-        logger.warning(f"Using BACKUP system: {backup_url}")
+        logger.warning(f"使用备用系统: {backup_url}")
         return Response(
             content=response.content,
             status_code=response.status_code,
             headers=dict(response.headers),
         )
     except (httpx.ConnectError, httpx.TimeoutException) as e:
-        logger.critical(f"Both systems failed: {e}")
+        logger.critical(f"备用系统连接失败: {e}")
         data = {"mobile": settings.ADMIN_MOBILE, "code": "ADE备机服务异常，紧急处理。"}
+        logger.error(f"转发备用系统短信 data: {data}")
         send_res = await client.post(f"{settings.SMS_HOST}/content/sms", data=data)
-        logger.info(f"Forwarded to MAIN system send_res: {send_res}， send_res text: {send_res.text}")
+        logger.info(f"转发备用系统短信 send_res: {send_res}， send_res text: {send_res.text}")
         return Response(
-            content="Service unavailable: All backend systems are down", status_code=503
+            content="备用系统服务异常，紧急处理。", status_code=503
         )
     finally:
         await client.aclose()
