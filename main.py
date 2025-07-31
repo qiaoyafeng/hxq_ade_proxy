@@ -34,6 +34,7 @@ async def proxy_request(request: Request, path: str):
 
     # 2. 尝试主系统
     try:
+        logger.info(f"转发主系统: {target_url}")
         response = await client.request(
             method=request.method,
             url=target_url,
@@ -41,7 +42,6 @@ async def proxy_request(request: Request, path: str):
             content=await request.body(),
             timeout=settings.TIMEOUT,
         )
-        logger.info(f"转发主系统: {target_url}")
         return Response(
             content=response.content,
             status_code=response.status_code,
@@ -56,6 +56,7 @@ async def proxy_request(request: Request, path: str):
 
     # 3. 主系统失败时尝试备用系统
     try:
+        logger.warning(f"使用备用系统: {backup_url}")
         response = await client.request(
             method=request.method,
             url=backup_url,
@@ -63,7 +64,6 @@ async def proxy_request(request: Request, path: str):
             content=await request.body(),
             timeout=TIMEOUT,
         )
-        logger.warning(f"使用备用系统: {backup_url}")
         return Response(
             content=response.content,
             status_code=response.status_code,
