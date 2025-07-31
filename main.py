@@ -51,11 +51,7 @@ async def proxy_request(request: Request, path: str):
         logger.error(f"Main system failed: {e}")
         data = {"mobile": settings.ADMIN_MOBILE, "code": "ADE主机服务异常，紧急处理。"}
         send_res = await client.post(f"{settings.SMS_HOST}/content/sms", data=data)
-        logger.info(f"Forwarded to MAIN system send_res: {send_res}")
-        if send_res["code"] == 200:
-            logger.error(f"Main system failed SMS Send Success")
-        else:
-            logger.error(f"Main system failed SMS Send Fail")
+        logger.info(f"Forwarded to MAIN system send_res: {send_res}， send_res text: {send_res.text}")
 
     # 3. 主系统失败时尝试备用系统
     try:
@@ -76,10 +72,7 @@ async def proxy_request(request: Request, path: str):
         logger.critical(f"Both systems failed: {e}")
         data = {"mobile": settings.ADMIN_MOBILE, "code": "ADE备机服务异常，紧急处理。"}
         send_res = await client.post(f"{settings.SMS_HOST}/content/sms", data=data)
-        if send_res["code"] == 200:
-            logger.error(f"Both systems failed, SMS Send Success")
-        else:
-            logger.error(f"Both systems failed, SMS Send Fail")
+        logger.info(f"Forwarded to MAIN system send_res: {send_res}， send_res text: {send_res.text}")
         return Response(
             content="Service unavailable: All backend systems are down", status_code=503
         )
